@@ -65,9 +65,17 @@ namespace ScreenSaver
         /// </summary>
         static void ShowScreenSaver()
         {
+            int i = 0;
+            var multiscreenDisabled = new RegSettings().MultiscreenDisabled;
             foreach (Screen screen in Screen.AllScreens)
             {
                 ScreenSaverForm screensaver = new ScreenSaverForm(screen.Bounds);
+
+                // disable video on multi-displays (3+) except the first
+                if (Screen.AllScreens.Length > 2 && i != 0 && multiscreenDisabled)
+                    screensaver.ShowVideo = false;
+
+                i++;
                 screensaver.Show();
             }
         }

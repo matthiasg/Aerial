@@ -23,6 +23,7 @@ namespace ScreenSaver
 
         #endregion
 
+        public bool ShowVideo = true;
 
         private Point mouseLocation;
         private bool previewMode = false;
@@ -59,39 +60,66 @@ namespace ScreenSaver
         }
 
         private void ScreenSaverForm_Load(object sender, EventArgs e)
-        {   
-            if (!previewMode) Cursor.Hide();            
+        {
+            if (!previewMode) Cursor.Hide();
             TopMost = true;
-            
-            // ex: http://a1.phobos.apple.com/us/r1000/000/Features/atv/AutumnResources/videos/b2-1.mov
+
+            LayoutPlayer();
+
+            if (ShowVideo)
+            {
+                var list = axWindowsMediaPlayer1.playlistCollection.newPlaylist("Aerial");
+
+                var movies = new AerialContext().GetMovies();
+                foreach (var item in movies)
+                {
+                    var m = axWindowsMediaPlayer1.newMedia(item.url);
+                    list.appendItem(m);
+                }
+
+                axWindowsMediaPlayer1.currentPlaylist = list;
+
+                //this.axWindowsMediaPlayer1.URL = @"https://vimeo.com/91711013/download?t=1446647256&v=243511274&s=30ad93a6909c33cb955241b7159418522a8ba05b887b1e0600c81fa32ea495af";
+                this.axWindowsMediaPlayer1.Ctlcontrols.play();
+            }
+        }
+
+        private void LayoutPlayer()
+        {
             this.axWindowsMediaPlayer1.settings.autoStart = true;
             this.axWindowsMediaPlayer1.settings.enableErrorDialogs = true;
             this.axWindowsMediaPlayer1.uiMode = "none";
             this.axWindowsMediaPlayer1.enableContextMenu = false;
             Application.AddMessageFilter(new IgnoreMouseClickMessageFilter(this, axWindowsMediaPlayer1));
 
-            this.axWindowsMediaPlayer1.Size = this.Size;
+            this.axWindowsMediaPlayer1.Size = CalculateVideoFillSize(this.Size);
+            this.axWindowsMediaPlayer1.stretchToFit = true;
             this.axWindowsMediaPlayer1.Top = 0;
             this.axWindowsMediaPlayer1.Left = 0;
             this.axWindowsMediaPlayer1.settings.setMode("loop", true);
             this.axWindowsMediaPlayer1.MouseMoveEvent += AxWindowsMediaPlayer1_MouseMoveEvent;
             this.axWindowsMediaPlayer1.KeyPressEvent += AxWindowsMediaPlayer1_KeyPressEvent;
+        }
 
+        /// <summary>
+        /// Algoirthm for calculating video fill size
+        /// </summary>
+        /// <param name="displaySize"></param>
+        /// <param name="scaleMode"></param>
+        /// <returns>The size of the canvas needed to fill the screen with the source width and height element</returns>
+        private Size CalculateVideoFillSize(Size displaySize, double sourceHeight = 1080.0, double sourceWidth = 1920.0)
+        {
+            var screenHeight = (double)displaySize.Height;
+            var screenWidth = (double)displaySize.Width;
+            var screenRatio = screenWidth / screenHeight;
 
-            var list = axWindowsMediaPlayer1.playlistCollection.newPlaylist("Aerial");
+            var scale = Math.Max(screenWidth / sourceWidth, screenHeight / sourceHeight);
 
-            var movies = new AerialContext().GetMovies();
-            foreach (var item in movies)
+            return new Size()
             {
-                var m = axWindowsMediaPlayer1.newMedia(item.url);
-                list.appendItem(m);
-            }
-
-            axWindowsMediaPlayer1.currentPlaylist = list;
-
-            //this.axWindowsMediaPlayer1.URL = @"http://a1.phobos.apple.com/us/r1000/000/Features/atv/AutumnResources/videos/b2-1.mov";
-            this.axWindowsMediaPlayer1.Ctlcontrols.play();
-            
+                Height = Convert.ToInt32(scale * sourceHeight),
+                Width = Convert.ToInt32(scale * sourceWidth)
+            };
         }
 
         private void AxWindowsMediaPlayer1_KeyPressEvent(object sender, AxWMPLib._WMPOCXEvents_KeyPressEvent e)
@@ -103,7 +131,7 @@ namespace ScreenSaver
         {
             ScreenSaverForm_MouseMove(sender, new MouseEventArgs(MouseButtons.None, 0, e.fX, e.fY, 0));
         }
-                
+
         private void ScreenSaverForm_MouseMove(object sender, MouseEventArgs e)
         {
             if (!previewMode)
@@ -133,5 +161,4 @@ namespace ScreenSaver
                 Application.Exit();
         }
     }
-    
 }
